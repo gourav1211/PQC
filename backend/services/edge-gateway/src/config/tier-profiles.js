@@ -1,0 +1,5 @@
+export const tierProfiles = {
+  tier1: {},
+  tier2: {},
+  tier3: {},
+};

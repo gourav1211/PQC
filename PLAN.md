@@ -182,127 +182,76 @@ Build a working virtual testbed that demonstrates the **H2A-PQC Framework's effe
 
 ---
 
-### Phase 2: Device Simulator (Tier 1 & 2)
+### Phase 2: Device Simulator (Tier 1 & 2) ✅ COMPLETED
 **Duration:** 3-4 days  
-**Priority:** 🔴 Critical
+**Priority:** 🔴 Critical  
+**Status:** ✅ Complete
 
-#### 2.1 Core Configuration
+#### 2.1 Core Configuration ✅
 
 **File:** `backend/services/device-simulator/src/config.py`
 
 **Tasks:**
-- [ ] 2.1.1 Define device configuration schema
-  ```python
-  # Config parameters:
-  # - DEVICE_ID: str
-  # - DEVICE_TIER: int (1 or 2)
-  # - GATEWAY_URL: str
-  # - TELEMETRY_INTERVAL_MS: int
-  # - PQC_ALGORITHM: str ("dilithium2", "dilithium3", "kyber512", etc.)
-  # - ENABLE_METRICS: bool
-  # - BATCH_SIZE: int
-  ```
+- [x] 2.1.1 Define device configuration schema with Pydantic
+  - DeviceConfig class with all parameters
+  - DeviceTier enum (TIER_1_CONSTRAINED, TIER_2_CAPABLE)
+  - PQCAlgorithm enum (Dilithium2/3/5, Kyber512/768/1024)
+  - Environment variable loading
+  - Helper methods for tier-based algorithm selection
 
-#### 2.2 PQC Crypto Engine
+#### 2.2 PQC Crypto Engine ✅
 
 **File:** `backend/services/device-simulator/src/crypto/pqc_engine.py`
 
 **Tasks:**
-- [ ] 2.2.1 Implement `PQCEngine` class with liboqs
-- [ ] 2.2.2 Implement key generation (Dilithium-2/3, Kyber-512/768)
-- [ ] 2.2.3 Implement signing function with timing metrics
-- [ ] 2.2.4 Implement KEM encapsulation (for Tier 1 KEM-Trick)
-- [ ] 2.2.5 Add metric collection hooks
+- [x] 2.2.1 Implement `PQCEngine` class with liboqs
+- [x] 2.2.2 Implement key generation (Dilithium-2/3/5, Kyber-512/768/1024)
+- [x] 2.2.3 Implement signing function with timing metrics
+- [x] 2.2.4 Implement KEM encapsulation (for Tier 1 KEM-Trick)
+- [x] 2.2.5 Add metric collection hooks via CryptoMetrics dataclass
 
-```python
-# Class structure:
-class PQCEngine:
-    def __init__(self, algorithm: str, tier: int)
-    def generate_keypair() -> Tuple[bytes, bytes]
-    def sign(message: bytes) -> Tuple[bytes, CryptoMetrics]
-    def kem_encapsulate(public_key: bytes) -> Tuple[bytes, bytes, CryptoMetrics]
-```
-
-#### 2.3 Sensor Telemetry Mock
+#### 2.3 Sensor Telemetry Mock ✅
 
 **File:** `backend/services/device-simulator/src/telemetry/sensor_mock.py`
 
 **Tasks:**
-- [ ] 2.3.1 Implement realistic sensor data generation
-- [ ] 2.3.2 Add temperature, humidity, pressure, motion sensors
-- [ ] 2.3.3 Add anomaly injection for testing
-- [ ] 2.3.4 Add timestamp and sequence numbers
+- [x] 2.3.1 Implement realistic sensor data generation
+- [x] 2.3.2 Add temperature, humidity, pressure, motion, light, CO2, voltage sensors
+- [x] 2.3.3 Add anomaly injection for testing
+- [x] 2.3.4 Add timestamp and sequence numbers
+- [x] 2.3.5 Add TelemetryPayload class for complete payloads
 
-```python
-# Output format:
-{
-    "sensor_id": "temp-001",
-    "type": "temperature",
-    "value": 23.5,
-    "unit": "celsius",
-    "timestamp": "2026-01-20T10:30:00Z",
-    "seq": 12345
-}
-```
-
-#### 2.4 Main Device Logic
+#### 2.4 Main Device Logic ✅
 
 **File:** `backend/services/device-simulator/src/device.py`
 
 **Tasks:**
-- [ ] 2.4.1 Implement device initialization and registration
-- [ ] 2.4.2 Implement main telemetry loop
-- [ ] 2.4.3 Implement payload signing (Tier 2) or KEM auth (Tier 1)
-- [ ] 2.4.4 Implement HTTP client for gateway communication
-- [ ] 2.4.5 Implement metrics collection and reporting
-- [ ] 2.4.6 Add graceful shutdown handling
+- [x] 2.4.1 Implement device initialization and registration
+- [x] 2.4.2 Implement main telemetry loop (async)
+- [x] 2.4.3 Implement payload signing (Tier 2) or KEM auth (Tier 1)
+- [x] 2.4.4 Implement HTTP client for gateway communication (aiohttp)
+- [x] 2.4.5 Implement metrics collection and reporting
+- [x] 2.4.6 Add graceful shutdown handling (signal handlers)
 
-```python
-# Main loop structure:
-async def run():
-    # 1. Register with gateway (get session key/nonce)
-    # 2. Loop:
-    #    a. Generate sensor data
-    #    b. Start timing
-    #    c. Sign data (Tier 2) or KEM auth (Tier 1)
-    #    d. Stop timing, record metrics
-    #    e. Send payload to gateway
-    #    f. Sleep for interval
-```
+#### 2.5 Device Metrics Collection ✅
 
-#### 2.5 Device Metrics Collection
-
-**File:** `backend/services/device-simulator/src/metrics/collector.py` (NEW)
+**File:** `backend/services/device-simulator/src/metrics/collector.py`
 
 **Tasks:**
-- [ ] 2.5.1 Create metrics data structures
-- [ ] 2.5.2 Implement timing collection
-- [ ] 2.5.3 Implement CPU-time based energy estimation
-- [ ] 2.5.4 Implement metrics serialization for transmission
+- [x] 2.5.1 Create metrics data structures (DeviceMetrics, AggregatedMetrics)
+- [x] 2.5.2 Implement timing collection with rolling window
+- [x] 2.5.3 Implement CPU-time based energy estimation
+- [x] 2.5.4 Implement metrics serialization for transmission
+- [x] 2.5.5 Add session summary and statistics
 
-```python
-@dataclass
-class DeviceMetrics:
-    sign_time_ms: float
-    kem_time_ms: float
-    payload_size_bytes: int
-    signature_size_bytes: int
-    cpu_time_ms: float
-    estimated_energy_mj: float  # millijoules
-    timestamp: str
-```
+#### 2.6 Requirements & Module Structure ✅
 
-#### 2.6 Requirements Update
-
-**File:** `backend/services/device-simulator/requirements.txt`
-
-```
-liboqs-python>=0.9.0
-aiohttp>=3.9.0
-python-dotenv>=1.0.0
-pydantic>=2.5.0
-structlog>=24.1.0
-```
+**Files created/updated:**
+- `backend/services/device-simulator/requirements.txt` ✅
+- `backend/services/device-simulator/src/__init__.py` ✅
+- `backend/services/device-simulator/src/crypto/__init__.py` ✅
+- `backend/services/device-simulator/src/telemetry/__init__.py` ✅
+- `backend/services/device-simulator/src/metrics/__init__.py` ✅
 
 ---
 
@@ -884,12 +833,12 @@ pytest-asyncio>=0.21.0
 
 ### Week 1: Foundation + Device Simulator
 
-- [ ] Day 1-2: Phase 1 (Docker infrastructure)
-- [ ] Day 3-5: Phase 2 (Device simulator with PQC)
+- [x] Day 1-2: Phase 1 (Docker infrastructure) ✅ COMPLETE
+- [x] Day 3-5: Phase 2 (Device simulator with PQC) ✅ COMPLETE
 
 ### Week 2: Edge Gateway
 
-- [ ] Day 6-8: Phase 3.1-3.6 (Gateway core + LLAS)
+- [ ] Day 6-8: Phase 3.1-3.6 (Gateway core + LLAS) ⏳ IN PROGRESS
 - [ ] Day 9-10: Phase 3.7-3.12 (PKI, Metrics, Routes)
 
 ### Week 3: Integration + Dashboard
@@ -908,15 +857,15 @@ pytest-asyncio>=0.21.0
 
 The implementation is complete when:
 
-1. ✅ Device simulators successfully generate PQC signatures
-2. ✅ Gateway verifies signatures and aggregates using LLAS
-3. ✅ Dashboard shows real-time comparison between Baseline and H2A
-4. ✅ Metrics demonstrate:
+1. ⏳ Device simulators successfully generate PQC signatures
+2. ⏳ Gateway verifies signatures and aggregates using LLAS
+3. ⏳ Dashboard shows real-time comparison between Baseline and H2A
+4. ⏳ Metrics demonstrate:
    - >90% bandwidth reduction with LLAS
    - Clear latency difference between Tier 1 and Tier 2
    - Measurable DB write reduction
-5. ✅ All experiment scenarios can be run and produce CSV output
-6. ✅ Results are reproducible and suitable for research paper
+5. ⏳ All experiment scenarios can be run and produce CSV output
+6. ⏳ Results are reproducible and suitable for research paper
 
 ---
 

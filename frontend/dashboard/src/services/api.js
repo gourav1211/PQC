@@ -105,7 +105,22 @@ export const getRevocationList = () => api.get('/revocation/list');
 
 export const getCRL = () => api.get('/revocation/crl');
 
+// Export api object for direct use
+export { api };
+
+// Health check helper
+export const healthCheck = () => api.get('/health');
+
+// Get current mode
+export const getCurrentMode = () => api.get('/mode');
+
+// Get bandwidth metrics
+export const getBandwidthMetrics = () => api.get('/metrics/bandwidth');
+
 export default {
+  healthCheck,
+  getCurrentMode,
+  getBandwidthMetrics,
   getHealth,
   getStatus,
   getMetrics,

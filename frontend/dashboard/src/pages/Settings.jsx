@@ -7,7 +7,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Save, RotateCcw, Shield, Server, Cpu, Bell } from 'lucide-react';
-import { api } from '../services/api';
+import api from '../services/api';
 
 export default function Settings() {
   const [settings, setSettings] = useState({

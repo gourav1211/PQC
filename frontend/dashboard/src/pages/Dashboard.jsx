@@ -16,7 +16,7 @@ import {
   LiveTraffic,
   MetricsSummary,
 } from '../components';
-import { api } from '../services/api';
+import api from '../services/api';
 import { useWebSocket } from '../hooks/useWebSocket';
 
 export default function Dashboard() {

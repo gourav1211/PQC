@@ -1,1 +1,46 @@
-{}
+{
+  "name": "High Load Stress Test",
+  "description": "Stress test with increased device count and faster telemetry",
+  "mode": "h2a",
+  "devices": {
+    "tier1": {
+      "count": 8,
+      "cpu_limit": "0.1",
+      "memory_limit": "64m",
+      "crypto_mode": "kem_only"
+    },
+    "tier2": {
+      "count": 4,
+      "cpu_limit": "0.3",
+      "memory_limit": "128m",
+      "crypto_mode": "full_signing"
+    }
+  },
+  "telemetry": {
+    "interval_ms": 500,
+    "payload_size_bytes": 512,
+    "sensors": ["temperature", "humidity", "pressure", "vibration", "light", "motion"]
+  },
+  "aggregation": {
+    "enabled": true,
+    "batch_size": 100,
+    "timeout_ms": 3000,
+    "merkle_tree": true,
+    "compress_payloads": true
+  },
+  "experiment": {
+    "duration_seconds": 180,
+    "warmup_seconds": 20,
+    "cooldown_seconds": 10
+  },
+  "metrics_collection": {
+    "sample_rate_ms": 50,
+    "export_format": "csv",
+    "include_raw_data": false
+  },
+  "expected_results": {
+    "messages_per_second": 24,
+    "peak_throughput_msg_s": 30,
+    "notes": "Tests gateway capacity under high load conditions"
+  }
+}

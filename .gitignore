@@ -16,6 +16,7 @@ build/
 logs/
 *.log
 
+venv
 # Env files
 .env
 .env.*

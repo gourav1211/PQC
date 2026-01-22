@@ -15,10 +15,10 @@ from pydantic_settings import BaseSettings
 logger = logging.getLogger(__name__)
 
 
-class DeviceTier(int, Enum):
+class DeviceTier(str, Enum):
     """Device capability tiers"""
-    TIER_1_CONSTRAINED = 1  # KEM-only authentication (ultra-low power)
-    TIER_2_CAPABLE = 2       # Full signature generation
+    TIER_1_CONSTRAINED = "tier1"  # KEM-only authentication (ultra-low power)
+    TIER_2_CAPABLE = "tier2"      # Full signature generation
 
 
 class PQCAlgorithm(str, Enum):

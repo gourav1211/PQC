@@ -40,8 +40,9 @@ const deviceSchema = new mongoose.Schema({
   // PQC algorithm used for signing
   signatureAlgorithm: {
     type: String,
-    enum: ['dilithium2', 'dilithium3', 'dilithium5', 'ml-dsa-44', 'ml-dsa-65', 'ml-dsa-87'],
+    enum: ['dilithium2', 'dilithium3', 'dilithium5', 'ml-dsa-44', 'ml-dsa-65', 'ml-dsa-87', 'ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87'],
     default: 'dilithium3',
+    set: (v) => v ? v.toLowerCase() : v, // Normalize to lowercase
   },
 
   // KEM public key (Kyber) for Tier 1 devices

@@ -72,33 +72,38 @@ class PQCEngine:
     """
     
     # Algorithm mappings for liboqs
+    # Note: liboqs 0.15.0+ uses FIPS 204 names (ML-DSA) instead of Dilithium
     SIGNATURE_ALGORITHMS = {
-        "Dilithium2": "Dilithium2",
-        "Dilithium3": "Dilithium3",
-        "Dilithium5": "Dilithium5",
-        # ML-DSA (FIPS 204) names
-        "ML-DSA-44": "Dilithium2",
-        "ML-DSA-65": "Dilithium3",
-        "ML-DSA-87": "Dilithium5",
+        # Legacy names map to new FIPS 204 names
+        "Dilithium2": "ML-DSA-44",
+        "Dilithium3": "ML-DSA-65",
+        "Dilithium5": "ML-DSA-87",
+        # ML-DSA (FIPS 204) names - direct mapping
+        "ML-DSA-44": "ML-DSA-44",
+        "ML-DSA-65": "ML-DSA-65",
+        "ML-DSA-87": "ML-DSA-87",
     }
     
     KEM_ALGORITHMS = {
+        # Legacy Kyber names still supported in liboqs 0.15.0
         "Kyber512": "Kyber512",
         "Kyber768": "Kyber768",
         "Kyber1024": "Kyber1024",
-        # ML-KEM (FIPS 203) names
-        "ML-KEM-512": "Kyber512",
-        "ML-KEM-768": "Kyber768",
-        "ML-KEM-1024": "Kyber1024",
+        # ML-KEM (FIPS 203) names - also supported
+        "ML-KEM-512": "ML-KEM-512",
+        "ML-KEM-768": "ML-KEM-768",
+        "ML-KEM-1024": "ML-KEM-1024",
     }
     
-    def __init__(self, algorithm: str, tier: int):
+    def __init__(self, algorithm: str, tier):
         """
         Initialize the PQC Engine.
         
         Args:
             algorithm: PQC algorithm name (e.g., 'Dilithium2', 'Kyber512')
-            tier: Device tier (1 = KEM mode, 2 = Signature mode)
+            tier: Device tier (1, 2, "tier1", or "tier2")
+                  1 or "tier1" = KEM mode
+                  2 or "tier2" = Signature mode
         """
         self.tier = tier
         self.algorithm = algorithm
@@ -107,9 +112,9 @@ class PQCEngine:
         
         logger.debug(f"Initializing PQCEngine: algorithm={algorithm}, tier={tier}")
         
-        # Determine mode based on tier
-        self.is_signature_mode = tier == 2
-        self.is_kem_mode = tier == 1
+        # Determine mode based on tier (handle both int and string values)
+        self.is_signature_mode = tier == 2 or tier == "tier2"
+        self.is_kem_mode = tier == 1 or tier == "tier1"
         
         # Resolve algorithm name
         if self.is_signature_mode:

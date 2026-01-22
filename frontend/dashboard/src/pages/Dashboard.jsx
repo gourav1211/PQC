@@ -58,11 +58,11 @@ export default function Dashboard() {
         api.getAggregationMetrics(),
       ]);
 
-      setMode(modeRes.data?.mode || 'h2a');
-      setDevices(devicesRes.data || []);
-      setThroughputData(throughputRes.data);
-      setBandwidthData(bandwidthRes.data);
-      setAggregationData(aggregationRes.data);
+      setMode(modeRes?.mode || modeRes?.data?.mode || 'h2a');
+      setDevices(devicesRes?.devices || devicesRes?.data || []);
+      setThroughputData(throughputRes?.data || throughputRes);
+      setBandwidthData(bandwidthRes?.data || bandwidthRes);
+      setAggregationData(aggregationRes?.data || aggregationRes);
       setLastRefresh(new Date());
     } catch (err) {
       console.error('Failed to fetch data:', err);

@@ -119,9 +119,10 @@ class SensorReading:
         return asdict(self)
     
     def to_bytes(self) -> bytes:
-        """Convert to bytes for signing"""
+        """Convert to bytes for signing (compact JSON to match JavaScript)"""
         import json
-        return json.dumps(self.to_dict(), sort_keys=True).encode('utf-8')
+        # Use separators=(',', ':') for compact JSON matching JavaScript's JSON.stringify
+        return json.dumps(self.to_dict(), sort_keys=True, separators=(',', ':')).encode('utf-8')
 
 
 class SensorMock:
@@ -293,9 +294,10 @@ class TelemetryPayload:
         return asdict(self)
     
     def to_bytes(self) -> bytes:
-        """Convert to bytes for signing"""
+        """Convert to bytes for signing (compact JSON to match JavaScript)"""
         import json
-        return json.dumps(self.to_dict(), sort_keys=True).encode('utf-8')
+        # Use separators=(',', ':') for compact JSON matching JavaScript's JSON.stringify
+        return json.dumps(self.to_dict(), sort_keys=True, separators=(',', ':')).encode('utf-8')
     
     def get_payload_size(self) -> int:
         """Get the size of the payload in bytes"""

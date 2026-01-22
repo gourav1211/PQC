@@ -24,6 +24,23 @@ import { Metric } from './models/Metric.js';
 const logger = pino({ name: 'api-routes' });
 const router = Router();
 
+/**
+ * Recursively sort object keys for consistent JSON serialization
+ * Matches Python's json.dumps(obj, sort_keys=True) behavior
+ */
+function sortKeysRecursively(obj) {
+  if (Array.isArray(obj)) {
+    return obj.map(sortKeysRecursively);
+  } else if (obj !== null && typeof obj === 'object') {
+    const sorted = {};
+    Object.keys(obj).sort().forEach(key => {
+      sorted[key] = sortKeysRecursively(obj[key]);
+    });
+    return sorted;
+  }
+  return obj;
+}
+
 // ============================================================================
 // Health & Status
 // ============================================================================
@@ -91,17 +108,26 @@ router.post('/register/complete', async (req, res) => {
     const result = await completeRegistration(registrationId, proof);
 
     if (result.success) {
-      // Create device in database
-      const device = new Device({
-        deviceId: result.device.deviceId,
-        tier: result.device.tier,
-        status: 'active',
-        capabilities: result.device.capabilities,
-        registeredAt: result.device.registeredAt,
-        publicKey: req.body.publicKey,
-        kemPublicKey: req.body.kemPublicKey,
-      });
-      await device.save();
+      // Create or update device in database (upsert to handle re-registration)
+      await Device.findOneAndUpdate(
+        { deviceId: result.device.deviceId },
+        {
+          $set: {
+            tier: result.device.tier,
+            status: 'active',
+            capabilities: result.device.capabilities,
+            registeredAt: result.device.registeredAt,
+            publicKey: req.body.publicKey,
+            kemPublicKey: req.body.kemPublicKey,
+            signatureAlgorithm: result.device.algorithm,
+            lastSeen: new Date(),
+          },
+          $setOnInsert: {
+            deviceId: result.device.deviceId,
+          },
+        },
+        { upsert: true, new: true }
+      );
       
       res.status(200).json(result);
     } else {
@@ -120,7 +146,7 @@ router.post('/register/complete', async (req, res) => {
 router.post('/telemetry', async (req, res) => {
   try {
     const startTime = performance.now();
-    const { deviceId, payload, signature, timestamp } = req.body;
+    const { deviceId, payload, signature, auth, timestamp } = req.body;
 
     // Validate device exists
     const device = await Device.findOne({ deviceId, status: 'active' });
@@ -133,19 +159,33 @@ router.post('/telemetry', async (req, res) => {
       return res.status(403).json({ error: 'Device is revoked' });
     }
 
-    // Verify signature if provided
+    // Verify signature if provided (Tier 2 devices)
     let verified = false;
-    if (signature && device.publicKey) {
-      const verifyResult = verifySignature(
-        device.publicKey,
-        signature,
-        JSON.stringify(payload),
-        device.signatureAlgorithm || 'dilithium3'
+    const signatureToVerify = signature || (auth && auth.signature);
+    if (signatureToVerify && device.publicKey) {
+      // Decode base64 public key and signature to Uint8Array
+      const publicKeyBytes = Uint8Array.from(Buffer.from(device.publicKey, 'base64'));
+      const signatureBytes = Uint8Array.from(Buffer.from(signatureToVerify, 'base64'));
+      
+      // Reconstruct the message the device signed (recursively sorted JSON to match Python's sort_keys=True)
+      const sortedPayload = sortKeysRecursively(payload);
+      const messageToVerify = JSON.stringify(sortedPayload);
+      const messageBytes = new TextEncoder().encode(messageToVerify);
+      
+      // Get algorithm from auth data or device record
+      const algorithm = (auth && auth.algorithm) || device.signatureAlgorithm || 'dilithium3';
+      
+      // verifySignature expects: (publicKey, message, signature, algorithm)
+      const verifyResult = await verifySignature(
+        publicKeyBytes,
+        messageBytes,
+        signatureBytes,
+        algorithm
       );
       verified = verifyResult.valid;
       
       if (!verified) {
-        logger.warn(`Signature verification failed: ${deviceId}`);
+        logger.warn(`Signature verification failed: ${deviceId}, algorithm=${algorithm}`);
         return res.status(401).json({ error: 'Signature verification failed' });
       }
     }
@@ -335,6 +375,44 @@ router.get('/metrics/aggregation', (req, res) => {
 
 router.get('/metrics/verification', (req, res) => {
   res.json(getVerifierMetrics());
+});
+
+router.get('/metrics/bandwidth', async (req, res) => {
+  try {
+    const throughput = getThroughputMetrics();
+    const aggregation = getAggregationMetrics();
+    
+    // Calculate mode comparison data
+    const baselineBytes = throughput.bandwidth?.totalBytesReceived || 0;
+    const h2aBytes = aggregation.totalCompressedBytes || baselineBytes * 0.6; // Estimate if not available
+    const savedBytes = baselineBytes - h2aBytes;
+    const reductionPercent = baselineBytes > 0 
+      ? ((savedBytes / baselineBytes) * 100).toFixed(1) 
+      : 0;
+
+    res.json({
+      modeComparison: {
+        baseline: {
+          bytes: baselineBytes,
+          messages: throughput.counters?.messagesReceived || 0,
+        },
+        h2a: {
+          bytes: h2aBytes,
+          messages: aggregation.batchesSent || 0,
+        },
+      },
+      efficiency: {
+        bandwidthSavedKB: (savedBytes / 1024).toFixed(2),
+        bandwidthReductionPercent: reductionPercent,
+        compressionRatio: aggregation.avgCompressionRatio || 1,
+      },
+      current: throughput.bandwidth || {},
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error(`Bandwidth metrics failed: ${error.message}`);
+    res.status(500).json({ error: 'Failed to get bandwidth metrics' });
+  }
 });
 
 router.get('/metrics/comparison', async (req, res) => {

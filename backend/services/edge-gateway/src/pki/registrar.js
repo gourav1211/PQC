@@ -9,6 +9,7 @@ import { ml_dsa65 } from '@noble/post-quantum/ml-dsa';
 import { randomBytes } from 'crypto';
 import pino from 'pino';
 import { trustStore, addDevice, getDevice } from './trust-store.js';
+import { Device } from '../models/Device.js';
 import { isRevoked } from './revocation.js';
 import { encapsulate, createChallenge } from '../crypto/kem-auth.js';
 import { verifySignature } from '../crypto/verifier.js';
@@ -91,15 +92,18 @@ export async function initiateRegistration(request) {
     };
   }
 
-  // Check if already registered
+  // Check if already registered in trust store (memory)
   const existingDevice = getDevice(request.deviceId);
   if (existingDevice) {
-    logger.warn(`Device already registered: ${request.deviceId}`);
-    return {
-      success: false,
-      state: RegistrationState.REJECTED,
-      error: 'Device already registered',
-    };
+    logger.warn(`Device already registered in trust store: ${request.deviceId}`);
+    // Allow re-registration - device will be updated
+  }
+
+  // Also check the database for devices from previous server sessions
+  const existingDbDevice = await Device.findOne({ deviceId: request.deviceId });
+  if (existingDbDevice) {
+    logger.info(`Re-registering existing device from database: ${request.deviceId}`);
+    // Allow re-registration - device credentials will be updated
   }
 
   // Check if revoked
@@ -193,11 +197,20 @@ export async function completeRegistration(registrationId, proof) {
       if (!proof.signature || !proof.message) {
         return { success: false, error: 'signature and message required for verification' };
       }
-      const result = verifySignature(
-        pending.publicKey,
-        proof.signature,
-        proof.message,
-        tierProfile?.signatureAlgorithm || 'dilithium3'
+      
+      // Decode base64 public key and signature
+      const publicKeyBytes = Buffer.from(pending.publicKey, 'base64');
+      const signatureBytes = Buffer.from(proof.signature, 'base64');
+      const messageBytes = Buffer.from(proof.message, 'utf-8');
+      
+      // Use the algorithm declared by the device during registration, fallback to tier default
+      const algorithm = pending.algorithm || tierProfile?.signatureAlgorithm || 'dilithium2';
+      
+      const result = await verifySignature(
+        publicKeyBytes,
+        messageBytes,
+        signatureBytes,
+        algorithm
       );
       verified = result.valid;
     }
@@ -220,6 +233,7 @@ export async function completeRegistration(registrationId, proof) {
     tier: pending.tier,
     publicKey: pending.publicKey || null,
     kemPublicKey: pending.kemPublicKey || null,
+    algorithm: pending.algorithm || null,
     capabilities: getTierCapabilities(pending.tier),
     registeredAt: new Date(),
     lastSeen: new Date(),
@@ -247,6 +261,7 @@ export async function completeRegistration(registrationId, proof) {
     device: {
       deviceId: device.deviceId,
       tier: device.tier,
+      algorithm: device.algorithm,
       capabilities: device.capabilities,
       registeredAt: device.registeredAt,
     },

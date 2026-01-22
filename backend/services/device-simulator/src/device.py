@@ -145,16 +145,18 @@ class DeviceSimulator:
         Register the device with the edge gateway.
         
         Sends public key and device metadata to establish identity.
+        Two-phase registration: initiate -> complete
         """
         if not self._session:
             self.logger.error("No HTTP session available")
             return False
         
+        # Build registration payload with camelCase keys matching gateway API
         registration_payload = {
-            "device_id": self.config.device_id,
+            "deviceId": self.config.device_id,
             "tier": self.config.device_tier.value,
             "algorithm": self.pqc_engine.resolved_algorithm,
-            "public_key": self.pqc_engine.get_public_key_b64(),
+            "publicKey": self.pqc_engine.get_public_key_b64(),
             "capabilities": {
                 "sensors": self.sensor_mock.get_sensor_ids(),
                 "mode": "signature" if self.config.is_signature_mode() else "kem"
@@ -162,26 +164,38 @@ class DeviceSimulator:
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
         
+        # Add KEM public key for tier1 devices
+        if not self.config.is_signature_mode():
+            registration_payload["kemPublicKey"] = self.pqc_engine.get_public_key_b64()
+        
         try:
-            url = f"{self.config.gateway_url}/api/devices/register"
-            self.logger.info("Registering with gateway", url=url)
+            # Phase 1: Initiate registration
+            url = f"{self.config.gateway_url}/api/v1/register/initiate"
+            self.logger.info("Initiating registration with gateway", url=url)
             
             async with self._session.post(url, json=registration_payload) as response:
                 if response.status == 200 or response.status == 201:
                     data = await response.json()
-                    self._registered = True
                     
                     # Store gateway public key if provided (for KEM mode)
                     if "gateway_public_key" in data:
                         self._gateway_public_key = base64.b64decode(data["gateway_public_key"])
                     
-                    self.logger.info("Registration successful",
+                    self.logger.info("Registration initiated",
                                     status=response.status,
-                                    response=data)
-                    return True
+                                    registration_id=data.get("registrationId"))
+                    
+                    # Phase 2: Complete registration
+                    registration_id = data.get("registrationId")
+                    if registration_id:
+                        return await self._complete_registration(registration_id, registration_payload)
+                    else:
+                        # Some gateways may auto-complete registration
+                        self._registered = True
+                        return True
                 else:
                     text = await response.text()
-                    self.logger.error("Registration failed",
+                    self.logger.error("Registration initiation failed",
                                      status=response.status,
                                      response=text)
                     return False
@@ -194,6 +208,60 @@ class DeviceSimulator:
         except Exception as e:
             self.logger.error("Unexpected registration error", error=str(e))
             self._registered = True
+            return False
+    
+    async def _complete_registration(self, registration_id: str, original_payload: Dict[str, Any]) -> bool:
+        """
+        Complete the registration process with the gateway.
+        
+        Args:
+            registration_id: The registration ID from initiate phase
+            original_payload: The original registration payload
+        """
+        try:
+            url = f"{self.config.gateway_url}/api/v1/register/complete"
+            
+            # Build proof based on device tier
+            if self.config.is_signature_mode():
+                # Tier 2/3: Sign a message as proof
+                message = f"registration:{registration_id}:{self.config.device_id}"
+                signature, _ = self.pqc_engine.sign(message.encode('utf-8'))
+                proof = {
+                    "signature": base64.b64encode(signature).decode('utf-8'),
+                    "message": message
+                }
+            else:
+                # Tier 1: Provide shared secret (simplified for demo)
+                proof = {
+                    "sharedSecret": "demo_shared_secret"
+                }
+            
+            complete_payload = {
+                "registrationId": registration_id,
+                "proof": proof,
+                "publicKey": original_payload.get("publicKey"),
+                "kemPublicKey": original_payload.get("kemPublicKey")
+            }
+            
+            self.logger.info("Completing registration", registration_id=registration_id)
+            
+            async with self._session.post(url, json=complete_payload) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    self._registered = True
+                    self.logger.info("Registration completed successfully",
+                                    device_id=self.config.device_id,
+                                    status=response.status)
+                    return True
+                else:
+                    text = await response.text()
+                    self.logger.error("Registration completion failed",
+                                     status=response.status,
+                                     response=text)
+                    return False
+                    
+        except Exception as e:
+            self.logger.error("Registration completion error", error=str(e))
             return False
     
     async def _telemetry_loop(self):
@@ -283,11 +351,12 @@ class DeviceSimulator:
             error=crypto_metrics.error
         )
         
-        # Build transmission payload
+        # Build transmission payload with camelCase keys matching gateway API
         transmission_payload = {
-            "device_id": self.config.device_id,
+            "deviceId": self.config.device_id,
             "tier": self.config.device_tier.value,
             "payload": payload.to_dict(),
+            "signature": auth_data.get("signature") if auth_data.get("type") == "signature" else None,
             "auth": auth_data,
             "metrics": {
                 "crypto_time_ms": crypto_metrics.duration_ms,
@@ -310,10 +379,10 @@ class DeviceSimulator:
             return
         
         try:
-            url = f"{self.config.gateway_url}/api/telemetry"
+            url = f"{self.config.gateway_url}/api/v1/telemetry"
             
             async with self._session.post(url, json=payload) as response:
-                if response.status == 200 or response.status == 201:
+                if response.status == 200 or response.status == 201 or response.status == 202:
                     if self._telemetry_count % 10 == 0:  # Log every 10th
                         self.logger.info("Telemetry sent",
                                         sequence=self._telemetry_count,

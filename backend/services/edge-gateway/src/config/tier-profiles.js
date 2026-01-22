@@ -16,6 +16,8 @@ export const TIER_1 = {
   description: 'Ultra-low power devices using KEM-based authentication',
   authMethod: 'kem',
   algorithms: ['kyber512', 'kyber768'],
+  kemAlgorithm: 'kyber512',
+  signatureAlgorithm: null,
   expectedLatencyMs: {
     min: 50,
     max: 200,
@@ -45,6 +47,8 @@ export const TIER_2 = {
   description: 'Moderate capability devices with full signature support',
   authMethod: 'signature',
   algorithms: ['dilithium2', 'dilithium3'],
+  signatureAlgorithm: 'dilithium2',
+  kemAlgorithm: null,
   expectedLatencyMs: {
     min: 20,
     max: 100,
@@ -74,6 +78,8 @@ export const TIER_3 = {
   description: 'Edge gateway with full cryptographic capabilities',
   authMethod: 'both',
   algorithms: ['dilithium2', 'dilithium3', 'dilithium5', 'kyber512', 'kyber768', 'kyber1024'],
+  signatureAlgorithm: 'dilithium3',
+  kemAlgorithm: 'kyber768',
   expectedLatencyMs: {
     min: 1,
     max: 20,
@@ -103,6 +109,25 @@ export const tierProfiles = {
   tier2: TIER_2,
   tier3: TIER_3,
 };
+
+/**
+ * Tier profiles indexed by uppercase key (TIER_1, TIER_2, TIER_3)
+ */
+export const TIER_PROFILES = {
+  TIER_1: TIER_1,
+  TIER_2: TIER_2,
+  TIER_3: TIER_3,
+};
+
+/**
+ * Get capabilities for a specific tier
+ * @param {string|number} tier - Tier identifier (e.g., 'tier1', 1, 'TIER_1')
+ * @returns {object|null} Capabilities object or null if tier not found
+ */
+export function getTierCapabilities(tier) {
+  const profile = getTierProfile(tier);
+  return profile ? profile.capabilities : null;
+}
 
 /**
  * Get tier profile by ID or name
@@ -140,7 +165,9 @@ export default {
   TIER_2,
   TIER_3,
   tierProfiles,
+  TIER_PROFILES,
   getTierProfile,
+  getTierCapabilities,
   validateAuthMethod,
   getExpectedLatency,
 };

@@ -19,6 +19,7 @@ import { setGatewaySigningKey, setGatewayKemKey } from './pki/trust-store.js';
 import { generateGatewayKeypair } from './crypto/kem-auth.js';
 import { recordBatch } from './metrics/aggregation.metrics.js';
 import { AggregatedLog } from './models/AggregatedLog.js';
+import { broadcastBatch } from './websocket.js';
 
 const logger = pino({ 
   name: 'edge-gateway',
@@ -140,6 +141,9 @@ export async function initializeGateway() {
         
         // Record metrics
         recordBatch(batch);
+        
+        // Broadcast batch to WebSocket clients for Live Traffic
+        broadcastBatch(batch);
         
         logger.debug(`Batch saved: ${batch.batchId}, logs=${batch.logCount}`);
       } catch (error) {

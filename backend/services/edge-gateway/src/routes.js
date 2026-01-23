@@ -17,6 +17,7 @@ import { addLog, flush, getMetrics as getLlasMetrics, getConfig, setConfig } fro
 import { getMetrics as getThroughputMetrics, recordMessageReceived, recordLatency } from './metrics/throughput.metrics.js';
 import { getMetrics as getAggregationMetrics, recordBatch } from './metrics/aggregation.metrics.js';
 import { getMetrics as getVerifierMetrics } from './metrics/verifier.metrics.js';
+import { broadcastTelemetry } from './websocket.js';
 import { Device } from './models/Device.js';
 import { AggregatedLog } from './models/AggregatedLog.js';
 import { Metric } from './models/Metric.js';
@@ -201,6 +202,14 @@ router.post('/telemetry', async (req, res) => {
       payload,
       signature,
       tier: device.tier,
+      verified,
+    });
+
+    // Broadcast telemetry to WebSocket clients for Live Traffic
+    broadcastTelemetry({
+      deviceId,
+      tier: device.tier,
+      payload,
       verified,
     });
 

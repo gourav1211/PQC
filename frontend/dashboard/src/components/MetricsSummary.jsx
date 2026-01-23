@@ -6,21 +6,31 @@
 
 import { Activity, Shield, Package, Clock, TrendingUp, TrendingDown } from 'lucide-react';
 
-export default function MetricsSummary({ throughput, bandwidth, loading = false }) {
+export default function MetricsSummary({ throughput, bandwidth, verification, loading = false }) {
+  // Extract values from correct backend data structures
+  // throughput: { counters: { messagesReceived }, throughput: { messagesPerSecond }, latency: { avg, ... } }
+  // verification: { counters: { totalVerifications }, rate: { verificationsPerSecond } }
+  const totalVerifications = verification?.counters?.totalVerifications || 
+                             throughput?.counters?.messagesReceived || 0;
+  const verificationsPerSec = parseFloat(verification?.rate?.verificationsPerSecond) || 
+                              parseFloat(throughput?.throughput?.messagesPerSecond) || 0;
+  const avgLatency = throughput?.latency?.avg || 0;
+  const bandwidthSaved = bandwidth?.efficiency?.bandwidthReductionPercent || 0;
+
   const metrics = [
     {
       id: 'verifications',
       label: 'Total Verifications',
-      value: throughput?.totals?.verifications || 0,
+      value: totalVerifications,
       icon: Shield,
       color: 'text-pqc-primary',
       bgColor: 'bg-pqc-primary/10',
-      trend: calculateTrend(throughput?.ratePerSecond?.verifications),
+      trend: calculateTrend(verificationsPerSec),
     },
     {
       id: 'throughput',
       label: 'Throughput',
-      value: `${throughput?.ratePerSecond?.verifications?.toFixed(1) || 0}/s`,
+      value: `${verificationsPerSec.toFixed(1)}/s`,
       icon: Activity,
       color: 'text-pqc-accent',
       bgColor: 'bg-pqc-accent/10',
@@ -28,7 +38,7 @@ export default function MetricsSummary({ throughput, bandwidth, loading = false 
     {
       id: 'bandwidth',
       label: 'Bandwidth Saved',
-      value: `${bandwidth?.efficiency?.bandwidthReductionPercent || 0}%`,
+      value: `${bandwidthSaved}%`,
       icon: TrendingDown,
       color: 'text-green-400',
       bgColor: 'bg-green-400/10',
@@ -37,7 +47,7 @@ export default function MetricsSummary({ throughput, bandwidth, loading = false 
     {
       id: 'avgLatency',
       label: 'Avg Latency',
-      value: `${throughput?.latency?.avg || 0}ms`,
+      value: `${avgLatency}ms`,
       icon: Clock,
       color: 'text-pqc-warning',
       bgColor: 'bg-pqc-warning/10',

@@ -15,14 +15,20 @@ export default function LiveTraffic({ wsData, mode = 'h2a' }) {
 
   // Add new packets from WebSocket
   useEffect(() => {
-    if (wsData?.type === 'telemetry' || wsData?.type === 'batch') {
+    // Backend sends: 'telemetry-received' and 'batch-created' event types
+    if (wsData?.type === 'telemetry-received' || 
+        wsData?.type === 'batch-created' ||
+        wsData?.type === 'telemetry' || 
+        wsData?.type === 'batch') {
+      
+      const isBatchEvent = wsData.type === 'batch-created' || wsData.type === 'batch';
       const newPacket = {
         id: Date.now(),
-        type: wsData.type,
-        deviceId: wsData.deviceId || 'Gateway',
-        size: wsData.size || wsData.batchSize || 0,
+        type: isBatchEvent ? 'batch' : 'telemetry',
+        deviceId: wsData.data?.deviceId || wsData.deviceId || 'Gateway',
+        size: wsData.data?.payloadSize || wsData.size || wsData.batchSize || 0,
         timestamp: new Date(),
-        verified: wsData.verified !== false,
+        verified: wsData.data?.verified !== false && wsData.verified !== false,
       };
 
       setPackets((prev) => {

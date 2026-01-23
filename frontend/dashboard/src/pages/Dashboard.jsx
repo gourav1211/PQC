@@ -26,6 +26,7 @@ export default function Dashboard() {
   const [throughputData, setThroughputData] = useState(null);
   const [bandwidthData, setBandwidthData] = useState(null);
   const [aggregationData, setAggregationData] = useState(null);
+  const [verificationData, setVerificationData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastRefresh, setLastRefresh] = useState(new Date());
@@ -50,12 +51,14 @@ export default function Dashboard() {
         throughputRes,
         bandwidthRes,
         aggregationRes,
+        verificationRes,
       ] = await Promise.all([
         api.getCurrentMode(),
         api.getDevices(),
         api.getThroughputMetrics(),
         api.getBandwidthMetrics(),
         api.getAggregationMetrics(),
+        api.getVerificationMetrics(),
       ]);
 
       setMode(modeRes?.mode || modeRes?.data?.mode || 'h2a');
@@ -63,6 +66,7 @@ export default function Dashboard() {
       setThroughputData(throughputRes?.data || throughputRes);
       setBandwidthData(bandwidthRes?.data || bandwidthRes);
       setAggregationData(aggregationRes?.data || aggregationRes);
+      setVerificationData(verificationRes?.data || verificationRes);
       setLastRefresh(new Date());
     } catch (err) {
       console.error('Failed to fetch data:', err);
@@ -85,6 +89,7 @@ export default function Dashboard() {
       if (wsMetrics.throughput) setThroughputData(wsMetrics.throughput);
       if (wsMetrics.bandwidth) setBandwidthData(wsMetrics.bandwidth);
       if (wsMetrics.aggregation) setAggregationData(wsMetrics.aggregation);
+      if (wsMetrics.verification) setVerificationData(wsMetrics.verification);
     }
   }, [wsMetrics]);
 
@@ -207,6 +212,7 @@ export default function Dashboard() {
             <MetricsSummary
               throughput={throughputData}
               bandwidth={bandwidthData}
+              verification={verificationData}
               loading={loading}
             />
           </div>

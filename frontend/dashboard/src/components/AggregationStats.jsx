@@ -9,10 +9,23 @@ import { Layers, Package, GitMerge, Zap } from 'lucide-react';
 export default function AggregationStats({ data, loading = false }) {
   const stats = data || {};
   
-  const batches = stats.batchCount || 0;
-  const messagesAggregated = stats.messagesAggregated || 0;
-  const avgBatchSize = stats.avgBatchSize || 0;
-  const merkleTreeDepth = stats.avgMerkleTreeDepth || 0;
+  // Map backend data structure to component expectations
+  // Backend returns: { efficiency: { totalBatchesCreated, totalLogsProcessed, ... }, batchDistribution: {...}, ... }
+  // Or from LLAS: { aggregatedBatches, totalLogs, avgBatchSize, merkleRoots, ... }
+  const batches = Number(stats.efficiency?.totalBatchesCreated) || 
+                  Number(stats.aggregatedBatches) || 
+                  Number(stats.batchCount) || 0;
+  const messagesAggregated = Number(stats.efficiency?.totalLogsProcessed) || 
+                              Number(stats.totalLogs) || 
+                              Number(stats.messagesAggregated) || 0;
+  const avgBatchSize = Number(stats.efficiency?.avgLogsPerBatch) || 
+                       Number(stats.avgBatchSize) || 0;
+  const merkleTreeDepth = Number(stats.batchDistribution?.avg) || 
+                          Number(stats.merkleRoots) || 
+                          Number(stats.avgMerkleTreeDepth) || 0;
+
+  // Store normalized stats for efficiency calculation
+  const normalizedStats = { batchCount: batches, messagesAggregated };
 
   if (loading) {
     return (
@@ -75,13 +88,13 @@ export default function AggregationStats({ data, loading = false }) {
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-gray-400">Aggregation Efficiency</span>
             <span className="text-sm font-medium text-green-400">
-              {calculateEfficiency(stats)}%
+              {calculateEfficiency(normalizedStats)}%
             </span>
           </div>
           <div className="w-full bg-gray-700 rounded-full h-2">
             <div
               className="bg-gradient-to-r from-green-500 to-emerald-400 h-2 rounded-full transition-all duration-500"
-              style={{ width: `${calculateEfficiency(stats)}%` }}
+              style={{ width: `${calculateEfficiency(normalizedStats)}%` }}
             ></div>
           </div>
         </div>

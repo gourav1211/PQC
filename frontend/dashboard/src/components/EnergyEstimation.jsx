@@ -161,7 +161,11 @@ function EnergyBar({ label, value, max, color }) {
 }
 
 function calculateEnergy(throughputData, bandwidthData) {
-  const verifications = throughputData?.totals?.verifications || 0;
+  // Use correct backend data structure paths
+  // throughput: { counters: { messagesReceived }, ... }
+  // verification: { counters: { totalVerifications }, ... }
+  const verifications = throughputData?.counters?.messagesReceived || 
+                        throughputData?.totals?.verifications || 0;
   const h2aBytes = bandwidthData?.modeComparison?.h2a?.bytes || 0;
   const baselineBytes = bandwidthData?.modeComparison?.baseline?.bytes || 0;
   

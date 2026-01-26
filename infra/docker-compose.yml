@@ -53,180 +53,180 @@ services:
     networks:
       - h2a-pqc-net
 
-  # =============================================================================
-  # TIER 2: Edge Gateway (Node.js)
-  # =============================================================================
-  edge-gateway:
-    build:
-      context: ../backend/services/edge-gateway
-      dockerfile: Dockerfile
-    container_name: h2a-edge-gateway
-    restart: unless-stopped
-    ports:
-      - "4000:4000"
-      - "4001:4001"  # WebSocket port
-    environment:
-      NODE_ENV: development
-      PORT: 4000
-      WS_PORT: 4001
-      MONGODB_URI: mongodb://${MONGO_USER:-h2a_admin}:${MONGO_PASSWORD:-h2a_secret}@mongodb:27017/h2a_pqc?authSource=admin
-      MODE: ${H2A_MODE:-h2a}
-      AGGREGATION_BATCH_SIZE: ${AGGREGATION_BATCH_SIZE:-50}
-      AGGREGATION_TIMEOUT_MS: ${AGGREGATION_TIMEOUT_MS:-5000}
-      LOG_LEVEL: ${LOG_LEVEL:-info}
-    depends_on:
-      mongodb:
-        condition: service_healthy
-    networks:
-      - h2a-pqc-net
-    deploy:
-      resources:
-        limits:
-          cpus: "1.0"
-          memory: 512M
+  # # =============================================================================
+  # # TIER 2: Edge Gateway (Node.js)
+  # # =============================================================================
+  # edge-gateway:
+  #   build:
+  #     context: ../backend/services/edge-gateway
+  #     dockerfile: Dockerfile
+  #   container_name: h2a-edge-gateway
+  #   restart: unless-stopped
+  #   ports:
+  #     - "4000:4000"
+  #     - "4001:4001"  # WebSocket port
+  #   environment:
+  #     NODE_ENV: development
+  #     PORT: 4000
+  #     WS_PORT: 4001
+  #     MONGODB_URI: mongodb://${MONGO_USER:-h2a_admin}:${MONGO_PASSWORD:-h2a_secret}@mongodb:27017/h2a_pqc?authSource=admin
+  #     MODE: ${H2A_MODE:-h2a}
+  #     AGGREGATION_BATCH_SIZE: ${AGGREGATION_BATCH_SIZE:-50}
+  #     AGGREGATION_TIMEOUT_MS: ${AGGREGATION_TIMEOUT_MS:-5000}
+  #     LOG_LEVEL: ${LOG_LEVEL:-info}
+  #   depends_on:
+  #     mongodb:
+  #       condition: service_healthy
+  #   networks:
+  #     - h2a-pqc-net
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: "1.0"
+  #         memory: 512M
 
-  # =============================================================================
-  # TIER 1: Constrained IoT Devices (Python + liboqs)
-  # These simulate ultra-low-power devices using KEM-based authentication
-  # =============================================================================
-  device-tier1-1:
-    build:
-      context: ../backend/services/device-simulator
-      dockerfile: Dockerfile
-    container_name: h2a-device-tier1-1
-    restart: unless-stopped
-    environment:
-      DEVICE_ID: device-tier1-001
-      DEVICE_TIER: tier1
-      GATEWAY_URL: http://edge-gateway:4000
-      TELEMETRY_INTERVAL_MS: 2000
-      PQC_ALGORITHM: kyber512
-      ENABLE_METRICS: "true"
-    depends_on:
-      - edge-gateway
-    networks:
-      - h2a-pqc-net
-    deploy:
-      resources:
-        limits:
-          cpus: "0.1"
-          memory: 64M
+  # # =============================================================================
+  # # TIER 1: Constrained IoT Devices (Python + liboqs)
+  # # These simulate ultra-low-power devices using KEM-based authentication
+  # # =============================================================================
+  # device-tier1-1:
+  #   build:
+  #     context: ../backend/services/device-simulator
+  #     dockerfile: Dockerfile
+  #   container_name: h2a-device-tier1-1
+  #   restart: unless-stopped
+  #   environment:
+  #     DEVICE_ID: device-tier1-001
+  #     DEVICE_TIER: tier1
+  #     GATEWAY_URL: http://edge-gateway:4000
+  #     TELEMETRY_INTERVAL_MS: 2000
+  #     PQC_ALGORITHM: kyber512
+  #     ENABLE_METRICS: "true"
+  #   depends_on:
+  #     - edge-gateway
+  #   networks:
+  #     - h2a-pqc-net
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: "0.1"
+  #         memory: 64M
 
-  device-tier1-2:
-    build:
-      context: ../backend/services/device-simulator
-      dockerfile: Dockerfile
-    container_name: h2a-device-tier1-2
-    restart: unless-stopped
-    environment:
-      DEVICE_ID: device-tier1-002
-      DEVICE_TIER: tier1
-      GATEWAY_URL: http://edge-gateway:4000
-      TELEMETRY_INTERVAL_MS: 2500
-      PQC_ALGORITHM: kyber512
-      ENABLE_METRICS: "true"
-    depends_on:
-      - edge-gateway
-    networks:
-      - h2a-pqc-net
-    deploy:
-      resources:
-        limits:
-          cpus: "0.1"
-          memory: 64M
+  # device-tier1-2:
+  #   build:
+  #     context: ../backend/services/device-simulator
+  #     dockerfile: Dockerfile
+  #   container_name: h2a-device-tier1-2
+  #   restart: unless-stopped
+  #   environment:
+  #     DEVICE_ID: device-tier1-002
+  #     DEVICE_TIER: tier1
+  #     GATEWAY_URL: http://edge-gateway:4000
+  #     TELEMETRY_INTERVAL_MS: 2500
+  #     PQC_ALGORITHM: kyber512
+  #     ENABLE_METRICS: "true"
+  #   depends_on:
+  #     - edge-gateway
+  #   networks:
+  #     - h2a-pqc-net
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: "0.1"
+  #         memory: 64M
 
-  device-tier1-3:
-    build:
-      context: ../backend/services/device-simulator
-      dockerfile: Dockerfile
-    container_name: h2a-device-tier1-3
-    restart: unless-stopped
-    environment:
-      DEVICE_ID: device-tier1-003
-      DEVICE_TIER: tier1
-      GATEWAY_URL: http://edge-gateway:4000
-      TELEMETRY_INTERVAL_MS: 3000
-      PQC_ALGORITHM: kyber512
-      ENABLE_METRICS: "true"
-    depends_on:
-      - edge-gateway
-    networks:
-      - h2a-pqc-net
-    deploy:
-      resources:
-        limits:
-          cpus: "0.1"
-          memory: 64M
+  # device-tier1-3:
+  #   build:
+  #     context: ../backend/services/device-simulator
+  #     dockerfile: Dockerfile
+  #   container_name: h2a-device-tier1-3
+  #   restart: unless-stopped
+  #   environment:
+  #     DEVICE_ID: device-tier1-003
+  #     DEVICE_TIER: tier1
+  #     GATEWAY_URL: http://edge-gateway:4000
+  #     TELEMETRY_INTERVAL_MS: 3000
+  #     PQC_ALGORITHM: kyber512
+  #     ENABLE_METRICS: "true"
+  #   depends_on:
+  #     - edge-gateway
+  #   networks:
+  #     - h2a-pqc-net
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: "0.1"
+  #         memory: 64M
 
-  # =============================================================================
-  # TIER 2: Capable IoT Devices (Python + liboqs)
-  # These can perform full Dilithium signature generation
-  # =============================================================================
-  device-tier2-1:
-    build:
-      context: ../backend/services/device-simulator
-      dockerfile: Dockerfile
-    container_name: h2a-device-tier2-1
-    restart: unless-stopped
-    environment:
-      DEVICE_ID: device-tier2-001
-      DEVICE_TIER: tier2
-      GATEWAY_URL: http://edge-gateway:4000
-      TELEMETRY_INTERVAL_MS: 1000
-      PQC_ALGORITHM: dilithium2
-      ENABLE_METRICS: "true"
-    depends_on:
-      - edge-gateway
-    networks:
-      - h2a-pqc-net
-    deploy:
-      resources:
-        limits:
-          cpus: "0.3"
-          memory: 128M
+  # # =============================================================================
+  # # TIER 2: Capable IoT Devices (Python + liboqs)
+  # # These can perform full Dilithium signature generation
+  # # =============================================================================
+  # device-tier2-1:
+  #   build:
+  #     context: ../backend/services/device-simulator
+  #     dockerfile: Dockerfile
+  #   container_name: h2a-device-tier2-1
+  #   restart: unless-stopped
+  #   environment:
+  #     DEVICE_ID: device-tier2-001
+  #     DEVICE_TIER: tier2
+  #     GATEWAY_URL: http://edge-gateway:4000
+  #     TELEMETRY_INTERVAL_MS: 1000
+  #     PQC_ALGORITHM: dilithium2
+  #     ENABLE_METRICS: "true"
+  #   depends_on:
+  #     - edge-gateway
+  #   networks:
+  #     - h2a-pqc-net
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: "0.3"
+  #         memory: 128M
 
-  device-tier2-2:
-    build:
-      context: ../backend/services/device-simulator
-      dockerfile: Dockerfile
-    container_name: h2a-device-tier2-2
-    restart: unless-stopped
-    environment:
-      DEVICE_ID: device-tier2-002
-      DEVICE_TIER: tier2
-      GATEWAY_URL: http://edge-gateway:4000
-      TELEMETRY_INTERVAL_MS: 1500
-      PQC_ALGORITHM: dilithium2
-      ENABLE_METRICS: "true"
-    depends_on:
-      - edge-gateway
-    networks:
-      - h2a-pqc-net
-    deploy:
-      resources:
-        limits:
-          cpus: "0.3"
-          memory: 128M
+  # device-tier2-2:
+  #   build:
+  #     context: ../backend/services/device-simulator
+  #     dockerfile: Dockerfile
+  #   container_name: h2a-device-tier2-2
+  #   restart: unless-stopped
+  #   environment:
+  #     DEVICE_ID: device-tier2-002
+  #     DEVICE_TIER: tier2
+  #     GATEWAY_URL: http://edge-gateway:4000
+  #     TELEMETRY_INTERVAL_MS: 1500
+  #     PQC_ALGORITHM: dilithium2
+  #     ENABLE_METRICS: "true"
+  #   depends_on:
+  #     - edge-gateway
+  #   networks:
+  #     - h2a-pqc-net
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: "0.3"
+  #         memory: 128M
 
-  device-tier2-3:
-    build:
-      context: ../backend/services/device-simulator
-      dockerfile: Dockerfile
-    container_name: h2a-device-tier2-3
-    restart: unless-stopped
-    environment:
-      DEVICE_ID: device-tier2-003
-      DEVICE_TIER: tier2
-      GATEWAY_URL: http://edge-gateway:4000
-      TELEMETRY_INTERVAL_MS: 2000
-      PQC_ALGORITHM: dilithium2
-      ENABLE_METRICS: "true"
-    depends_on:
-      - edge-gateway
-    networks:
-      - h2a-pqc-net
-    deploy:
-      resources:
-        limits:
-          cpus: "0.3"
-          memory: 128M
+  # device-tier2-3:
+  #   build:
+  #     context: ../backend/services/device-simulator
+  #     dockerfile: Dockerfile
+  #   container_name: h2a-device-tier2-3
+  #   restart: unless-stopped
+  #   environment:
+  #     DEVICE_ID: device-tier2-003
+  #     DEVICE_TIER: tier2
+  #     GATEWAY_URL: http://edge-gateway:4000
+  #     TELEMETRY_INTERVAL_MS: 2000
+  #     PQC_ALGORITHM: dilithium2
+  #     ENABLE_METRICS: "true"
+  #   depends_on:
+  #     - edge-gateway
+  #   networks:
+  #     - h2a-pqc-net
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: "0.3"
+  #         memory: 128M

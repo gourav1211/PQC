@@ -15,7 +15,7 @@ import { verifySignature, getVerificationMetrics } from './crypto/verifier.js';
 import { getKemMetrics, validateSession } from './crypto/kem-auth.js';
 import { addLog, flush, getMetrics as getLlasMetrics, getConfig, setConfig } from './modules/aggregation/llas.js';
 import { getMetrics as getThroughputMetrics, recordMessageReceived, recordLatency } from './metrics/throughput.metrics.js';
-import { getMetrics as getAggregationMetrics, recordBatch } from './metrics/aggregation.metrics.js';
+import { getMetrics as getAggregationMetrics } from './metrics/aggregation.metrics.js';
 import { getMetrics as getVerifierMetrics } from './metrics/verifier.metrics.js';
 import { broadcastTelemetry } from './websocket.js';
 import { Device } from './models/Device.js';
@@ -271,12 +271,9 @@ router.post('/aggregation/flush', async (req, res) => {
     const batch = flush();
     
     if (batch) {
-      // Save to database
-      const aggregatedLog = new AggregatedLog(batch);
-      await aggregatedLog.save();
-      
-      // Record metrics
-      recordBatch(batch);
+      // Note: Database save, recordBatch(), and broadcastBatch() are already 
+      // handled by the onFlush callback in app.js to ensure consistent handling
+      // for both auto-flush and manual flush scenarios.
       
       res.json({ flushed: true, batch });
     } else {
@@ -391,29 +388,42 @@ router.get('/metrics/bandwidth', async (req, res) => {
     const throughput = getThroughputMetrics();
     const aggregation = getAggregationMetrics();
     
-    // Calculate mode comparison data
-    const baselineBytes = throughput.bandwidth?.totalBytesReceived || 0;
-    const h2aBytes = aggregation.totalCompressedBytes || baselineBytes * 0.6; // Estimate if not available
+    // Use actual aggregation data from LLAS - originalBytesTotal represents what baseline would transmit
+    // (individual log sizes), aggregatedBytesTotal represents H2A compressed batches
+    const originalBytes = aggregation.efficiency?.originalBytesTotal || 0;
+    const aggregatedBytes = aggregation.efficiency?.aggregatedBytesTotal || 0;
+    
+    // For baseline comparison: use original bytes (what would be sent without aggregation)
+    // For H2A: use aggregated bytes (actual bytes sent with Merkle tree aggregation)
+    const baselineBytes = originalBytes;
+    const h2aBytes = aggregatedBytes;
+    
     const savedBytes = baselineBytes - h2aBytes;
     const reductionPercent = baselineBytes > 0 
       ? ((savedBytes / baselineBytes) * 100).toFixed(1) 
       : 0;
+    
+    // Calculate compression ratio from actual data
+    const compressionRatio = h2aBytes > 0 
+      ? (baselineBytes / h2aBytes).toFixed(2) 
+      : 1;
 
     res.json({
       modeComparison: {
         baseline: {
           bytes: baselineBytes,
-          messages: throughput.counters?.messagesReceived || 0,
+          messages: aggregation.efficiency?.totalLogsProcessed || throughput.counters?.messagesReceived || 0,
         },
         h2a: {
           bytes: h2aBytes,
-          messages: aggregation.batchesSent || 0,
+          batches: aggregation.efficiency?.totalBatchesCreated || 0,
         },
       },
       efficiency: {
+        bandwidthSavedBytes: savedBytes,
         bandwidthSavedKB: (savedBytes / 1024).toFixed(2),
         bandwidthReductionPercent: reductionPercent,
-        compressionRatio: aggregation.avgCompressionRatio || 1,
+        compressionRatio: parseFloat(compressionRatio),
       },
       current: throughput.bandwidth || {},
       timestamp: new Date().toISOString(),

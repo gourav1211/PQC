@@ -208,6 +208,8 @@ export function broadcastBatch(batch) {
       compressionRatio: batch.compressionRatio,
       deviceIds: batch.deviceIds,
       merkleRoot: batch.merkleRoot,
+      originalSizeBytes: batch.originalSizeBytes,
+      aggregatedSizeBytes: batch.aggregatedSizeBytes,
     },
     timestamp: new Date().toISOString(),
   });

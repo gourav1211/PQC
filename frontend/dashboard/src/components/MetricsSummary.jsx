@@ -4,33 +4,34 @@
  * Top-level metrics cards.
  */
 
-import { Activity, Shield, Package, Clock, TrendingUp, TrendingDown } from 'lucide-react';
+import { Activity, Shield, Layers, Clock, TrendingUp, TrendingDown } from 'lucide-react';
 
 export default function MetricsSummary({ throughput, bandwidth, verification, loading = false }) {
   // Extract values from correct backend data structures
   // throughput: { counters: { messagesReceived }, throughput: { messagesPerSecond }, latency: { avg, ... } }
   // verification: { counters: { totalVerifications }, rate: { verificationsPerSecond } }
-  const totalVerifications = verification?.counters?.totalVerifications || 
-                             throughput?.counters?.messagesReceived || 0;
-  const verificationsPerSec = parseFloat(verification?.rate?.verificationsPerSecond) || 
-                              parseFloat(throughput?.throughput?.messagesPerSecond) || 0;
+  // bandwidth: { efficiency: { bandwidthReductionPercent, compressionRatio }, modeComparison: {...} }
+  const totalMessages = bandwidth?.modeComparison?.baseline?.messages || 
+                        throughput?.counters?.messagesReceived || 0;
+  const messagesPerSec = parseFloat(throughput?.throughput?.messagesPerSecond) || 0;
   const avgLatency = throughput?.latency?.avg || 0;
   const bandwidthSaved = bandwidth?.efficiency?.bandwidthReductionPercent || 0;
+  const compressionRatio = bandwidth?.efficiency?.compressionRatio || 1;
 
   const metrics = [
     {
-      id: 'verifications',
-      label: 'Total Verifications',
-      value: totalVerifications,
+      id: 'messages',
+      label: 'Messages Processed',
+      value: totalMessages,
       icon: Shield,
       color: 'text-pqc-primary',
       bgColor: 'bg-pqc-primary/10',
-      trend: calculateTrend(verificationsPerSec),
+      trend: calculateTrend(messagesPerSec),
     },
     {
       id: 'throughput',
       label: 'Throughput',
-      value: `${verificationsPerSec.toFixed(1)}/s`,
+      value: `${messagesPerSec.toFixed(1)}/s`,
       icon: Activity,
       color: 'text-pqc-accent',
       bgColor: 'bg-pqc-accent/10',
@@ -42,7 +43,15 @@ export default function MetricsSummary({ throughput, bandwidth, verification, lo
       icon: TrendingDown,
       color: 'text-green-400',
       bgColor: 'bg-green-400/10',
-      highlight: true,
+      highlight: parseFloat(bandwidthSaved) > 50,
+    },
+    {
+      id: 'compression',
+      label: 'Compression Ratio',
+      value: `${compressionRatio}x`,
+      icon: Layers,
+      color: 'text-purple-400',
+      bgColor: 'bg-purple-400/10',
     },
     {
       id: 'avgLatency',
@@ -56,8 +65,8 @@ export default function MetricsSummary({ throughput, bandwidth, verification, lo
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[1, 2, 3, 4].map((i) => (
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        {[1, 2, 3, 4, 5].map((i) => (
           <div key={i} className="metric-card animate-pulse">
             <div className="h-4 bg-gray-700 rounded w-1/2 mb-2"></div>
             <div className="h-8 bg-gray-700 rounded w-3/4"></div>
@@ -68,7 +77,7 @@ export default function MetricsSummary({ throughput, bandwidth, verification, lo
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
       {metrics.map((metric) => (
         <MetricCard key={metric.id} {...metric} />
       ))}

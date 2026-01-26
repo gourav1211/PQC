@@ -26,7 +26,9 @@ export default function LiveTraffic({ wsData, mode = 'h2a' }) {
         id: Date.now(),
         type: isBatchEvent ? 'batch' : 'telemetry',
         deviceId: wsData.data?.deviceId || wsData.deviceId || 'Gateway',
-        size: wsData.data?.payloadSize || wsData.size || wsData.batchSize || 0,
+        size: isBatchEvent 
+          ? (wsData.data?.aggregatedSizeBytes || wsData.data?.originalSizeBytes || wsData.batchSize || 0)
+          : (wsData.data?.payloadSize || wsData.size || 0),
         timestamp: new Date(),
         verified: wsData.data?.verified !== false && wsData.verified !== false,
       };

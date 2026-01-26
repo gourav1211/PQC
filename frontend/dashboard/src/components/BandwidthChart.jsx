@@ -13,6 +13,9 @@ export default function BandwidthChart({ data, loading = false }) {
   
   const bandwidthSaved = data?.efficiency?.bandwidthSavedKB || 0;
   const reductionPercent = data?.efficiency?.bandwidthReductionPercent || 0;
+  const compressionRatio = data?.efficiency?.compressionRatio || 1;
+  const baselineMessages = data?.modeComparison?.baseline?.messages || 0;
+  const h2aBatches = data?.modeComparison?.h2a?.batches || 0;
 
   return (
     <div className="card">
@@ -76,14 +79,14 @@ export default function BandwidthChart({ data, loading = false }) {
         )}
         
         {/* Summary stats */}
-        <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-700/50">
+        <div className="grid grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-700/50">
           <div className="text-center">
             <div className="text-2xl font-bold text-red-400">
               {data?.modeComparison?.baseline?.bytes 
                 ? (data.modeComparison.baseline.bytes / 1024).toFixed(1) 
                 : '0'} KB
             </div>
-            <div className="text-xs text-gray-400">Baseline Total</div>
+            <div className="text-xs text-gray-400">Baseline ({baselineMessages} msgs)</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-green-400">
@@ -91,13 +94,19 @@ export default function BandwidthChart({ data, loading = false }) {
                 ? (data.modeComparison.h2a.bytes / 1024).toFixed(1) 
                 : '0'} KB
             </div>
-            <div className="text-xs text-gray-400">H2A Total</div>
+            <div className="text-xs text-gray-400">H2A ({h2aBatches} batches)</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-pqc-accent">
               {bandwidthSaved} KB
             </div>
             <div className="text-xs text-gray-400">Saved</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-purple-400">
+              {compressionRatio}x
+            </div>
+            <div className="text-xs text-gray-400">Compression</div>
           </div>
         </div>
       </div>

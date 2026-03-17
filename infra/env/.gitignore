@@ -1,0 +1,9 @@
+# Environment files may contain secrets
+# Keep .env.example files but ignore actual .env files with credentials
+*.local
+.env.production
+
+# However, we keep the dev templates for reference
+# !.env.dev
+# !.env.gateway
+# !.env.device

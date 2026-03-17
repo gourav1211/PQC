@@ -1,0 +1,48 @@
+{
+  "name": "H2A with LLAS Aggregation",
+  "description": "H2A-PQC mode with Lightweight Log Aggregation Scheme enabled",
+  "mode": "h2a",
+  "devices": {
+    "tier1": {
+      "count": 4,
+      "cpu_limit": "0.1",
+      "memory_limit": "64m",
+      "crypto_mode": "kem_only"
+    },
+    "tier2": {
+      "count": 2,
+      "cpu_limit": "0.3",
+      "memory_limit": "128m",
+      "crypto_mode": "full_signing"
+    }
+  },
+  "telemetry": {
+    "interval_ms": 1000,
+    "payload_size_bytes": 256,
+    "sensors": ["temperature", "humidity", "pressure", "vibration"]
+  },
+  "aggregation": {
+    "enabled": true,
+    "batch_size": 50,
+    "timeout_ms": 5000,
+    "merkle_tree": true,
+    "compress_payloads": true
+  },
+  "experiment": {
+    "duration_seconds": 300,
+    "warmup_seconds": 30,
+    "cooldown_seconds": 10
+  },
+  "metrics_collection": {
+    "sample_rate_ms": 100,
+    "export_format": "csv",
+    "include_raw_data": true
+  },
+  "expected_results": {
+    "bandwidth_reduction_percent": 90,
+    "db_write_reduction_percent": 98,
+    "messages_per_batch": 50,
+    "total_batches": 36,
+    "notes": "50 messages aggregated into single Merkle tree batch"
+  }
+}

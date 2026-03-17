@@ -1,0 +1,19 @@
+# H2A-PQC Experiment Dependencies
+# ================================
+
+# Async HTTP client for metrics collection
+aiohttp>=3.9.0
+
+# Data analysis
+numpy>=1.24.0
+pandas>=2.0.0
+
+# Visualization (optional)
+matplotlib>=3.7.0
+
+# CSV/JSON handling (built-in, but ensure compatibility)
+# csv (built-in)
+# json (built-in)
+
+# Logging enhancements
+colorlog>=6.7.0

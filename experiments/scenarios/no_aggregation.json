@@ -1,0 +1,40 @@
+{
+  "name": "Baseline (No Aggregation)",
+  "description": "Standard operation without LLAS aggregation - each message transmitted individually",
+  "mode": "baseline",
+  "devices": {
+    "tier1": {
+      "count": 4,
+      "cpu_limit": "0.1",
+      "memory_limit": "64m",
+      "crypto_mode": "kem_only"
+    },
+    "tier2": {
+      "count": 2,
+      "cpu_limit": "0.3",
+      "memory_limit": "128m",
+      "crypto_mode": "full_signing"
+    }
+  },
+  "telemetry": {
+    "interval_ms": 1000,
+    "payload_size_bytes": 256,
+    "sensors": ["temperature", "humidity", "pressure", "vibration"]
+  },
+  "experiment": {
+    "duration_seconds": 300,
+    "warmup_seconds": 30,
+    "cooldown_seconds": 10
+  },
+  "metrics_collection": {
+    "sample_rate_ms": 100,
+    "export_format": "csv",
+    "include_raw_data": true
+  },
+  "expected_results": {
+    "bandwidth_per_device_kbps": 2.5,
+    "total_messages": 1800,
+    "db_writes": 1800,
+    "notes": "Each message requires individual signature verification and DB write"
+  }
+}

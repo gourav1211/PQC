@@ -16,10 +16,13 @@ build/
 logs/
 *.log
 
+__pycache__/
+venv/
+
 # Env files
-.env
-.env.*
-!.env.example
+# .env
+# .env.*
+# !.env.example
 
 # Coverage
 coverage/
